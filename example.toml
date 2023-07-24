@@ -1,0 +1,37 @@
+[section]
+h = 588
+b = 300
+tw = 12
+tf = 20
+
+[bolt]
+diameter = 22
+
+[flange]
+  [flange.bolt]
+  nf = 4
+  mf = 2
+  is_staggered = true
+
+  [flange.gauge]
+  g1 = 150
+  g2 = 40
+
+  [flange.outer_plate]
+  t = 12
+  l = 440
+
+  [flange.inner_plate]
+  t = 16
+  b = 110
+
+[web]
+  [web.bolt]
+  mw = 7
+  nw = 1
+  pc = 60
+
+  [web.plate]
+  t = 9
+  b = 440
+  l = 170
