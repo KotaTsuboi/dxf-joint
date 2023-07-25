@@ -8,22 +8,29 @@ use dxf::{
 use std::error::Error;
 
 fn set_layer(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
-    let ref_line_layer = Layer {
-        name: input.layer_name().ref_line(),
-        line_type_name: "CENTER".to_string(),
-        color: Color::from_index(3),
+    let base_layer = Layer {
+        name: input.layer_name().base(),
+        color: Color::from_index(4),
         ..Default::default()
     };
 
-    drawing.add_layer(ref_line_layer);
+    drawing.add_layer(base_layer);
 
-    let dimension_layer = Layer {
-        name: input.layer_name().dimension(),
-        color: Color::from_index(3),
+    let bolt_layer = Layer {
+        name: input.layer_name().bolt(),
+        color: Color::from_index(2),
         ..Default::default()
     };
 
-    drawing.add_layer(dimension_layer);
+    drawing.add_layer(bolt_layer);
+
+    let plate_layer = Layer {
+        name: input.layer_name().plate(),
+        color: Color::from_index(1),
+        ..Default::default()
+    };
+
+    drawing.add_layer(plate_layer);
 
     Ok(())
 }
@@ -55,52 +62,24 @@ fn write_line(
     Ok(())
 }
 
-fn get_x_coords(input: &HJoint) -> Result<Vec<f64>, Box<dyn Error>> {
-    let mut coords = Vec::new();
+fn write_circle(
+    drawing: &mut Drawing,
+    x: f64,
+    y: f64,
+    r: f64,
+    layer: &str,
+) -> Result<(), Box<dyn Error>> {
+    let circle = Circle {
+        center: Point { x, y, z: 0.0 },
+        radius: r,
+        ..Default::default()
+    };
 
-    let mut x = 0.0;
+    let mut circle = Entity::new(dxf::entities::EntityType::Circle(circle));
 
-    for i in 0..input.num_x_axis() {
-        coords.push(x);
-        if i < input.num_x_axis() - 1 {
-            x += input.x_spans()[i as usize];
-        }
-    }
+    circle.common.layer = layer.to_string();
 
-    Ok(coords)
-}
-
-fn get_y_coords(input: &HJoint) -> Result<Vec<f64>, Box<dyn Error>> {
-    let mut coords = Vec::new();
-
-    let mut y = 0.0;
-
-    for i in 0..input.num_y_axis() {
-        coords.push(y);
-        if i < input.num_y_axis() - 1 {
-            y += input.y_spans()[i as usize];
-        }
-    }
-
-    Ok(coords)
-}
-
-fn write_x_lines(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
-    let length: f64 = input.y_spans().iter().sum();
-
-    for x in get_x_coords(input)? {
-        write_line(drawing, x, 0.0, x, length, &input.layer_name().ref_line())?;
-    }
-
-    Ok(())
-}
-
-fn write_y_lines(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
-    let length: f64 = input.x_spans().iter().sum();
-
-    for y in get_y_coords(input)? {
-        write_line(drawing, 0.0, y, length, y, &input.layer_name().ref_line())?;
-    }
+    drawing.add_entity(circle);
 
     Ok(())
 }
@@ -182,111 +161,145 @@ fn write_dimension(
     Ok(())
 }
 
-fn write_x_dimensions(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
-    for i in 1..input.num_x_axis() {
-        let coords = get_x_coords(input)?;
-        let x1 = coords[(i - 1) as usize];
-        let x2 = coords[i as usize];
-        write_dimension(
-            drawing,
-            x1,
-            0.0,
-            x2,
-            0.0,
-            input.layer_name().dimension(),
-            false,
-        )?;
+fn write_base(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
+    let sec = input.section();
+    let gap = 10.0;
+    let margin = 1000.0;
+
+    let coords = [
+        ((-gap / 2.0, 0.0), (-gap / 2.0, sec.h())),
+        ((gap / 2.0, 0.0), (gap / 2.0, sec.h())),
+        ((-margin, 0.0), (-gap / 2.0, 0.0)),
+        ((gap / 2.0, 0.0), (margin, 0.0)),
+        ((-margin, sec.tf()), (-gap / 2.0, sec.tf())),
+        ((gap / 2.0, sec.tf()), (margin, sec.tf())),
+        (
+            (-margin, sec.h() - sec.tf()),
+            (-gap / 2.0, sec.h() - sec.tf()),
+        ),
+        (
+            (gap / 2.0, sec.h() - sec.tf()),
+            (margin, sec.h() - sec.tf()),
+        ),
+        ((-margin, sec.h()), (-gap / 2.0, sec.h())),
+        ((gap / 2.0, sec.h()), (margin, sec.h())),
+    ];
+
+    for (p1, p2) in coords {
+        write_line(drawing, p1.0, p1.1, p2.0, p2.1, &input.layer_name().base())?;
     }
 
     Ok(())
 }
 
-fn write_y_dimensions(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
-    for i in 1..input.num_y_axis() {
-        let coords = get_y_coords(input)?;
-        let y1 = coords[(i - 1) as usize];
-        let y2 = coords[i as usize];
-        write_dimension(
-            drawing,
-            0.0,
-            y1,
-            0.0,
-            y2,
-            input.layer_name().dimension(),
-            true,
-        )?;
-    }
+fn write_outer_plate(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
+    let sec = input.section();
+
+    let h = input.section().h();
+    let t = input.flange().outer_plate().t();
+    let l = input.flange().outer_plate().l();
+    let layer = input.layer_name().plate();
+
+    write_line(drawing, -l / 2.0, h + t, l / 2.0, h + t, &layer)?;
+    write_line(drawing, -l / 2.0, h, l / 2.0, h, &layer)?;
+    write_line(drawing, -l / 2.0, h, -l / 2.0, h + t, &layer)?;
+    write_line(drawing, l / 2.0, h, l / 2.0, h + t, &layer)?;
+
+    write_line(drawing, -l / 2.0, -t, l / 2.0, -t, &layer)?;
+    write_line(drawing, -l / 2.0, 0.0, l / 2.0, 0.0, &layer)?;
+    write_line(drawing, -l / 2.0, 0.0, -l / 2.0, -t, &layer)?;
+    write_line(drawing, l / 2.0, 0.0, l / 2.0, -t, &layer)?;
 
     Ok(())
 }
 
-fn write_x_axes(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
-    let coords = get_x_coords(input)?;
+fn write_inner_plate(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
+    let sec = input.section();
 
-    for i in 0..input.num_x_axis() {
-        let x = coords[i as usize];
-        let y = -7000.0;
+    let h = input.section().h();
+    let tf = input.section().tf();
+    let t = input.flange().inner_plate().t();
+    let l = input.flange().outer_plate().l();
+    let layer = input.layer_name().plate();
 
-        let text = Text {
-            value: input.x_axes()[i as usize].clone(),
-            location: Point::new(x, y, 0.0),
-            text_height: 1000.0,
-            relative_x_scale_factor: 0.85,
-            horizontal_text_justification: HorizontalTextJustification::Center,
-            second_alignment_point: Point::new(x, y, 0.0),
-            vertical_text_justification: VerticalTextJustification::Middle,
-            ..Default::default()
-        };
+    write_line(drawing, -l / 2.0, h - tf - t, l / 2.0, h - tf - t, &layer)?;
+    write_line(drawing, -l / 2.0, h - tf, l / 2.0, h - tf, &layer)?;
+    write_line(drawing, -l / 2.0, h - tf, -l / 2.0, h - tf - t, &layer)?;
+    write_line(drawing, l / 2.0, h - tf, l / 2.0, h - tf - t, &layer)?;
 
-        let mut text = Entity::new(EntityType::Text(text));
-        text.common.layer = input.layer_name().dimension();
-        drawing.add_entity(text);
+    write_line(drawing, -l / 2.0, tf + t, l / 2.0, tf + t, &layer)?;
+    write_line(drawing, -l / 2.0, tf, l / 2.0, tf, &layer)?;
+    write_line(drawing, -l / 2.0, tf, -l / 2.0, tf + t, &layer)?;
+    write_line(drawing, l / 2.0, tf, l / 2.0, tf + t, &layer)?;
 
-        let circle = Circle {
-            radius: 1000.0,
-            center: Point::new(x, y, 0.0),
-            ..Default::default()
-        };
-
-        let mut circle = Entity::new(EntityType::Circle(circle));
-        circle.common.layer = input.layer_name().dimension();
-        drawing.add_entity(circle);
-    }
     Ok(())
 }
 
-fn write_y_axes(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
-    let coords = get_y_coords(input)?;
+fn write_web_plate(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
+    let sec = input.section();
 
-    for i in 0..input.num_y_axis() {
-        let x = -7000.0;
-        let y = coords[i as usize];
+    let h = input.section().h();
+    let l = input.web().plate().l();
+    let b = input.web().plate().b();
+    let layer = input.layer_name().plate();
 
-        let text = Text {
-            value: input.y_axes()[i as usize].clone(),
-            location: Point::new(x, y, 0.0),
-            text_height: 1000.0,
-            relative_x_scale_factor: 0.85,
-            horizontal_text_justification: HorizontalTextJustification::Center,
-            second_alignment_point: Point::new(x, y, 0.0),
-            vertical_text_justification: VerticalTextJustification::Middle,
-            rotation: 270.0,
-            ..Default::default()
-        };
+    write_line(
+        drawing,
+        -l / 2.0,
+        h / 2.0 - b / 2.0,
+        l / 2.0,
+        h / 2.0 - b / 2.0,
+        &layer,
+    )?;
+    write_line(
+        drawing,
+        -l / 2.0,
+        h / 2.0 + b / 2.0,
+        l / 2.0,
+        h / 2.0 + b / 2.0,
+        &layer,
+    )?;
+    write_line(
+        drawing,
+        -l / 2.0,
+        h / 2.0 - b / 2.0,
+        -l / 2.0,
+        h / 2.0 + b / 2.0,
+        &layer,
+    )?;
+    write_line(
+        drawing,
+        l / 2.0,
+        h / 2.0 - b / 2.0,
+        l / 2.0,
+        h / 2.0 + b / 2.0,
+        &layer,
+    )?;
 
-        let mut text = Entity::new(EntityType::Text(text));
-        text.common.layer = input.layer_name().dimension();
-        drawing.add_entity(text);
+    Ok(())
+}
 
-        let circle = Circle {
-            radius: 1000.0,
-            center: Point::new(x, y, 0.0),
-            ..Default::default()
-        };
+fn write_web_bolt(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
+    let gap = 10.0;
+    let layer = input.layer_name().plate();
+    let h = input.section().h();
+    let mw = input.web().bolt().mw();
+    let nw = input.web().bolt().nw();
+    let pc = input.web().bolt().pc();
+    let e = 40.0;
+    let r = input.bolt().diameter() as f64 / 2.0 + 1.0;
+    let g = 60.0;
 
-        let mut circle = Entity::new(EntityType::Circle(circle));
-        circle.common.layer = input.layer_name().dimension();
-        drawing.add_entity(circle);
+    let c = pc * (mw - 1) as f64;
+    let mut x = gap / 2.0 + e;
+    for i in 0..nw {
+        let mut y = h / 2.0 - c / 2.0;
+        for j in 0..mw {
+            write_circle(drawing, x, y, r, &layer);
+            write_circle(drawing, -x, y, r, &layer);
+            y += pc;
+        }
+        x += g;
     }
     Ok(())
 }
@@ -296,17 +309,15 @@ pub fn write(input: HJoint, output_file: &str) -> Result<(), Box<dyn Error>> {
 
     set_layer(&mut drawing, &input)?;
 
-    write_x_lines(&mut drawing, &input)?;
+    write_base(&mut drawing, &input)?;
 
-    write_y_lines(&mut drawing, &input)?;
+    write_outer_plate(&mut drawing, &input)?;
 
-    write_x_dimensions(&mut drawing, &input)?;
+    write_inner_plate(&mut drawing, &input)?;
 
-    write_y_dimensions(&mut drawing, &input)?;
+    write_web_plate(&mut drawing, &input)?;
 
-    write_x_axes(&mut drawing, &input)?;
-
-    write_y_axes(&mut drawing, &input)?;
+    write_web_bolt(&mut drawing, &input)?;
 
     drawing.save_file(output_file)?;
 

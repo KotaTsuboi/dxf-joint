@@ -4,11 +4,15 @@ use std::error::Error;
 use std::io::Read;
 use std::{fs, io::BufReader};
 
-#[derive(Deserialize, Getters, CopyGetters, Debug)]
+#[derive(Deserialize, CopyGetters, Debug)]
 pub struct HJoint {
+    #[getset(get_copy = "pub")]
     section: Section,
+    #[getset(get_copy = "pub")]
     bolt: Bolt,
+    #[getset(get_copy = "pub")]
     flange: Flange,
+    #[getset(get_copy = "pub")]
     web: Web,
     layer_name: Option<LayerName>,
 }
@@ -23,7 +27,7 @@ impl HJoint {
     }
 }
 
-#[derive(Deserialize, CopyGetters, Debug)]
+#[derive(Deserialize, Clone, Copy, CopyGetters, Debug)]
 pub struct Section {
     #[getset(get_copy = "pub")]
     h: f64,
@@ -35,13 +39,13 @@ pub struct Section {
     tf: f64,
 }
 
-#[derive(Deserialize, CopyGetters, Debug)]
+#[derive(Deserialize, Clone, Copy, CopyGetters, Debug)]
 pub struct Bolt {
     #[getset(get_copy = "pub")]
     diameter: u32,
 }
 
-#[derive(Deserialize, Clone, CopyGetters, Debug)]
+#[derive(Deserialize, Clone, Copy, CopyGetters, Debug)]
 pub struct Flange {
     #[getset(get_copy = "pub")]
     bolt: FlangeBolt,
@@ -53,7 +57,7 @@ pub struct Flange {
     inner_plate: InnerPlate,
 }
 
-#[derive(Deserialize, Clone, CopyGetters, Debug)]
+#[derive(Deserialize, Clone, Copy, CopyGetters, Debug)]
 pub struct FlangeBolt {
     #[getset(get_copy = "pub")]
     nf: u32,
@@ -63,7 +67,7 @@ pub struct FlangeBolt {
     is_staggered: bool,
 }
 
-#[derive(Deserialize, Clone, CopyGetters, Debug)]
+#[derive(Deserialize, Clone, Copy, CopyGetters, Debug)]
 pub struct Gauge {
     #[getset(get_copy = "pub")]
     g1: f64,
@@ -71,7 +75,7 @@ pub struct Gauge {
     g2: f64,
 }
 
-#[derive(Deserialize, Clone, CopyGetters, Debug)]
+#[derive(Deserialize, Clone, Copy, CopyGetters, Debug)]
 pub struct OuterPlate {
     #[getset(get_copy = "pub")]
     t: f64,
@@ -79,7 +83,7 @@ pub struct OuterPlate {
     l: f64,
 }
 
-#[derive(Deserialize, Clone, CopyGetters, Debug)]
+#[derive(Deserialize, Clone, Copy, CopyGetters, Debug)]
 pub struct InnerPlate {
     #[getset(get_copy = "pub")]
     t: f64,
@@ -87,7 +91,7 @@ pub struct InnerPlate {
     b: f64,
 }
 
-#[derive(Deserialize, Clone, CopyGetters, Debug)]
+#[derive(Deserialize, Clone, Copy, CopyGetters, Debug)]
 pub struct Web {
     #[getset(get_copy = "pub")]
     bolt: WebBolt,
@@ -95,7 +99,7 @@ pub struct Web {
     plate: WebPlate,
 }
 
-#[derive(Deserialize, Clone, CopyGetters, Debug)]
+#[derive(Deserialize, Clone, Copy, CopyGetters, Debug)]
 pub struct WebBolt {
     #[getset(get_copy = "pub")]
     mw: u32,
@@ -105,7 +109,7 @@ pub struct WebBolt {
     pc: f64,
 }
 
-#[derive(Deserialize, Clone, CopyGetters, Debug)]
+#[derive(Deserialize, Clone, Copy, CopyGetters, Debug)]
 pub struct WebPlate {
     #[getset(get_copy = "pub")]
     t: f64,
