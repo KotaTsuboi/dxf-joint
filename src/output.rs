@@ -62,6 +62,18 @@ fn write_line(
     Ok(())
 }
 
+fn write_cross(
+    drawing: &mut Drawing,
+    x: f64,
+    y: f64,
+    r: f64,
+    layer: &str,
+) -> Result<(), Box<dyn Error>> {
+    write_line(drawing, x - r, y, x + r, y, layer)?;
+    write_line(drawing, x, y - r, x, y + r, layer)?;
+    Ok(())
+}
+
 fn write_circle(
     drawing: &mut Drawing,
     x: f64,
@@ -214,8 +226,6 @@ fn write_outer_plate(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dy
 }
 
 fn write_inner_plate(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
-    let sec = input.section();
-
     let h = input.section().h();
     let tf = input.section().tf();
     let t = input.flange().inner_plate().t();
@@ -235,9 +245,39 @@ fn write_inner_plate(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dy
     Ok(())
 }
 
-fn write_web_plate(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
-    let sec = input.section();
+fn write_flange_bolt(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
+    let is_staggered = input.flange().bolt().is_staggered();
+    let pc = if is_staggered { 45.0 } else { 60.0 };
+    let e = 40.0;
+    let gap = 10.0;
+    let x0 = gap / 2.0 + e;
+    let nf = input.flange().bolt().nf();
+    let tf = input.section().tf();
+    let to = input.flange().outer_plate().t();
+    let ti = input.flange().inner_plate().t();
+    let margin = 20.0;
+    let layer = input.layer_name().bolt();
+    let h = input.section().h();
 
+    for i in 0..nf {
+        let x = x0 + i as f64 * pc;
+        write_line(drawing, x, -to - margin, x, tf + ti + margin, &layer)?;
+        write_line(drawing, x, h + to + margin, x, h - tf - ti - margin, &layer)?;
+        write_line(drawing, -x, -to - margin, -x, tf + ti + margin, &layer)?;
+        write_line(
+            drawing,
+            -x,
+            h + to + margin,
+            -x,
+            h - tf - ti - margin,
+            &layer,
+        )?;
+    }
+
+    Ok(())
+}
+
+fn write_web_plate(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
     let h = input.section().h();
     let l = input.web().plate().l();
     let b = input.web().plate().b();
@@ -281,7 +321,6 @@ fn write_web_plate(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn 
 
 fn write_web_bolt(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
     let gap = 10.0;
-    let layer = input.layer_name().plate();
     let h = input.section().h();
     let mw = input.web().bolt().mw();
     let nw = input.web().bolt().nw();
@@ -292,11 +331,16 @@ fn write_web_bolt(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn E
 
     let c = pc * (mw - 1) as f64;
     let mut x = gap / 2.0 + e;
-    for i in 0..nw {
+    for _i in 0..nw {
         let mut y = h / 2.0 - c / 2.0;
-        for j in 0..mw {
-            write_circle(drawing, x, y, r, &layer);
-            write_circle(drawing, -x, y, r, &layer);
+        for _j in 0..mw {
+            let layer = input.layer_name().plate();
+            write_circle(drawing, x, y, r, &layer)?;
+            write_circle(drawing, -x, y, r, &layer)?;
+
+            let layer = input.layer_name().bolt();
+            write_cross(drawing, x, y, 20.0, &layer)?;
+            write_cross(drawing, -x, y, 20.0, &layer)?;
             y += pc;
         }
         x += g;
@@ -314,6 +358,8 @@ pub fn write(input: HJoint, output_file: &str) -> Result<(), Box<dyn Error>> {
     write_outer_plate(&mut drawing, &input)?;
 
     write_inner_plate(&mut drawing, &input)?;
+
+    write_flange_bolt(&mut drawing, &input)?;
 
     write_web_plate(&mut drawing, &input)?;
 
