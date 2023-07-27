@@ -71,8 +71,13 @@ pub struct FlangeBolt {
 pub struct Gauge {
     #[getset(get_copy = "pub")]
     g1: f64,
-    #[getset(get_copy = "pub")]
-    g2: f64,
+    g2: Option<f64>,
+}
+
+impl Gauge {
+    pub fn g2(&self) -> f64 {
+        self.g2.unwrap_or(40.0)
+    }
 }
 
 #[derive(Deserialize, Clone, Copy, CopyGetters, Debug)]
