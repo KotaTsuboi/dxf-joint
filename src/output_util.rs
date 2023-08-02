@@ -74,8 +74,8 @@ pub fn write_dimension(
     y1: f64,
     x2: f64,
     y2: f64,
+    text_rotation_angle: f64,
     layer: String,
-    is_vertical: bool,
 ) -> Result<(), Box<dyn Error>> {
     let dim_style = DimStyle {
         name: "mydim".to_string(),
@@ -89,37 +89,22 @@ pub fn write_dimension(
 
     let gap = 5000.0;
 
-    let dimension_base = if is_vertical {
-        DimensionBase {
-            definition_point_1: Point {
-                x: (x1 + x2) / 2.0 - gap,
-                y: (y1 + y2) / 2.0,
-                z: 0.0,
-            },
-            text_mid_point: Point {
-                x: (x1 + x2) / 2.0 - gap,
-                y: (y1 + y2) / 2.0,
-                z: 0.0,
-            },
-            dimension_style_name: "mydim".to_string(),
-            text_rotation_angle: 270.0,
-            ..Default::default()
-        }
-    } else {
-        DimensionBase {
-            definition_point_1: Point {
-                x: (x1 + x2) / 2.0,
-                y: (y1 + y2) / 2.0 - gap,
-                z: 0.0,
-            },
-            text_mid_point: Point {
-                x: (x1 + x2) / 2.0,
-                y: (y1 + y2) / 2.0 - gap,
-                z: 0.0,
-            },
-            dimension_style_name: "mydim".to_string(),
-            ..Default::default()
-        }
+    let theta = text_rotation_angle / 180.0 * std::f64::consts::PI;
+
+    let dimension_base = DimensionBase {
+        definition_point_1: Point {
+            x: (x1 + x2) / 2.0,
+            y: (y1 + y2) / 2.0 - gap * f64::cos(theta),
+            z: 0.0,
+        },
+        text_mid_point: Point {
+            x: (x1 + x2) / 2.0,
+            y: (y1 + y2) / 2.0 - gap * f64::cos(theta),
+            z: 0.0,
+        },
+        dimension_style_name: "mydim".to_string(),
+        text_rotation_angle,
+        ..Default::default()
     };
 
     let dimension = OrdinateDimension {

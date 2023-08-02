@@ -141,6 +141,37 @@ fn write_flange_bolt(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dy
     Ok(())
 }
 
+pub fn write_x_dim(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
+    let gap = 10.0;
+    let e = 40.0;
+    let is_staggered = input.flange().bolt().is_staggered();
+    let pc = if is_staggered { 45.0 } else { 60.0 };
+    let layer = "0".to_string();
+    let text_rotation_angle = 0.0;
+    let x0 = gap / 2.0;
+    let y0 = GAP_BETWEEN_VIEW;
+    write_dimension(
+        drawing,
+        -gap / 2.0,
+        y0,
+        gap / 2.0,
+        y0,
+        text_rotation_angle,
+        layer,
+    )?;
+    write_dimension(
+        drawing,
+        gap / 2.0,
+        y0,
+        gap / 2.0 + e,
+        y0,
+        text_rotation_angle,
+        layer,
+    )?;
+    write_dimension(drawing, x1, y1, x2, y2, text_rotation_angle, layer)?;
+    Ok(())
+}
+
 pub fn write_z_view(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
     write_base(drawing, input)?;
 
