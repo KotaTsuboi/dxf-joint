@@ -157,7 +157,7 @@ pub fn write_x_dim(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn 
         gap / 2.0,
         y0,
         text_rotation_angle,
-        layer,
+        layer.clone(),
     )?;
     write_dimension(
         drawing,
@@ -166,7 +166,7 @@ pub fn write_x_dim(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn 
         gap / 2.0 + e,
         y0,
         text_rotation_angle,
-        layer,
+        layer.clone(),
     )?;
     Ok(())
 }
