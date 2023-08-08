@@ -168,7 +168,6 @@ pub fn write_x_dim(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn 
         text_rotation_angle,
         layer,
     )?;
-    write_dimension(drawing, x1, y1, x2, y2, text_rotation_angle, layer)?;
     Ok(())
 }
 
