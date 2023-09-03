@@ -1,149 +1,98 @@
-use getset::{CopyGetters, Getters};
 use serde_derive::Deserialize;
 use std::error::Error;
 use std::io::Read;
 use std::{fs, io::BufReader};
 
-#[derive(Deserialize, CopyGetters, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct HJoint {
-    #[getset(get_copy = "pub")]
-    section: Section,
-    #[getset(get_copy = "pub")]
-    bolt: Bolt,
-    #[getset(get_copy = "pub")]
-    flange: Flange,
-    #[getset(get_copy = "pub")]
-    web: Web,
-    layer_name: Option<LayerName>,
+    pub section: Section,
+    pub bolt: Bolt,
+    pub flange: Flange,
+    pub web: Web,
+    #[serde(default)]
+    pub layer_name: LayerName,
 }
 
-impl HJoint {
-    pub fn layer_name(&self) -> LayerName {
-        self.layer_name.clone().unwrap_or(LayerName {
-            base: Some("S母材".to_string()),
-            bolt: Some("Sボルト".to_string()),
-            plate: Some("Sプレート".to_string()),
-        })
-    }
-}
-
-#[derive(Deserialize, Clone, Copy, CopyGetters, Debug)]
+#[derive(Deserialize, Clone, Copy, Debug)]
 pub struct Section {
-    #[getset(get_copy = "pub")]
-    h: f64,
-    #[getset(get_copy = "pub")]
-    b: f64,
-    #[getset(get_copy = "pub")]
-    tw: f64,
-    #[getset(get_copy = "pub")]
-    tf: f64,
+    pub h: f64,
+    pub b: f64,
+    pub tw: f64,
+    pub tf: f64,
 }
 
-#[derive(Deserialize, Clone, Copy, CopyGetters, Debug)]
+#[derive(Deserialize, Clone, Copy, Debug)]
 pub struct Bolt {
-    #[getset(get_copy = "pub")]
-    diameter: u32,
+    pub diameter: u32,
 }
 
-#[derive(Deserialize, Clone, Copy, CopyGetters, Debug)]
+#[derive(Deserialize, Clone, Copy, Debug)]
 pub struct Flange {
-    #[getset(get_copy = "pub")]
-    bolt: FlangeBolt,
-    #[getset(get_copy = "pub")]
-    gauge: Gauge,
-    #[getset(get_copy = "pub")]
-    outer_plate: OuterPlate,
-    #[getset(get_copy = "pub")]
-    inner_plate: InnerPlate,
+    pub bolt: FlangeBolt,
+    pub gauge: Gauge,
+    pub outer_plate: OuterPlate,
+    pub inner_plate: InnerPlate,
 }
 
-#[derive(Deserialize, Clone, Copy, CopyGetters, Debug)]
+#[derive(Deserialize, Clone, Copy, Debug)]
 pub struct FlangeBolt {
-    #[getset(get_copy = "pub")]
-    nf: u32,
-    #[getset(get_copy = "pub")]
-    mf: u32,
-    #[getset(get_copy = "pub")]
-    is_staggered: bool,
+    pub nf: u32,
+    pub mf: u32,
+    pub is_staggered: bool,
 }
 
-#[derive(Deserialize, Clone, Copy, CopyGetters, Debug)]
+#[derive(Deserialize, Clone, Copy, Debug)]
 pub struct Gauge {
-    #[getset(get_copy = "pub")]
-    g1: f64,
-    g2: Option<f64>,
+    pub g1: f64,
+    pub g2: f64,
 }
 
-impl Gauge {
-    pub fn g2(&self) -> f64 {
-        self.g2.unwrap_or(40.0)
-    }
-}
-
-#[derive(Deserialize, Clone, Copy, CopyGetters, Debug)]
+#[derive(Deserialize, Clone, Copy, Debug)]
 pub struct OuterPlate {
-    #[getset(get_copy = "pub")]
-    t: f64,
-    #[getset(get_copy = "pub")]
-    l: f64,
+    pub t: f64,
+    pub l: f64,
 }
 
-#[derive(Deserialize, Clone, Copy, CopyGetters, Debug)]
+#[derive(Deserialize, Clone, Copy, Debug)]
 pub struct InnerPlate {
-    #[getset(get_copy = "pub")]
-    t: f64,
-    #[getset(get_copy = "pub")]
-    b: f64,
+    pub t: f64,
+    pub b: f64,
 }
 
-#[derive(Deserialize, Clone, Copy, CopyGetters, Debug)]
+#[derive(Deserialize, Clone, Copy, Debug)]
 pub struct Web {
-    #[getset(get_copy = "pub")]
-    bolt: WebBolt,
-    #[getset(get_copy = "pub")]
-    plate: WebPlate,
+    pub bolt: WebBolt,
+    pub plate: WebPlate,
 }
 
-#[derive(Deserialize, Clone, Copy, CopyGetters, Debug)]
+#[derive(Deserialize, Clone, Copy, Debug)]
 pub struct WebBolt {
-    #[getset(get_copy = "pub")]
-    mw: u32,
-    #[getset(get_copy = "pub")]
-    nw: u32,
-    #[getset(get_copy = "pub")]
-    pc: f64,
+    pub mw: u32,
+    pub nw: u32,
+    pub pc: f64,
 }
 
-#[derive(Deserialize, Clone, Copy, CopyGetters, Debug)]
+#[derive(Deserialize, Clone, Copy, Debug)]
 pub struct WebPlate {
-    #[getset(get_copy = "pub")]
-    t: f64,
-    #[getset(get_copy = "pub")]
-    b: f64,
-    #[getset(get_copy = "pub")]
-    l: f64,
+    pub t: f64,
+    pub b: f64,
+    pub l: f64,
 }
 
-#[derive(Deserialize, Clone, Getters, CopyGetters, Debug)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct LayerName {
-    base: Option<String>,
-    bolt: Option<String>,
-    plate: Option<String>,
+    pub base: String,
+    pub bolt: String,
+    pub plate: String,
 }
 
-impl LayerName {
-    pub fn base(&self) -> String {
-        self.base.clone().unwrap_or_else(|| "S母材".to_string())
-    }
-
-    pub fn bolt(&self) -> String {
-        self.bolt.clone().unwrap_or_else(|| "Sボルト".to_string())
-    }
-
-    pub fn plate(&self) -> String {
-        self.plate
-            .clone()
-            .unwrap_or_else(|| "Sプレート".to_string())
+impl Default for LayerName {
+    fn default() -> Self {
+        LayerName {
+            base: "S母材".to_string(),
+            bolt: "Sボルト".to_string(),
+            plate: "Sプレート".to_string(),
+        }
     }
 }
 
