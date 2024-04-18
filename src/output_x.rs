@@ -1,9 +1,9 @@
 use crate::input::HJoint;
 use crate::output_util::*;
+use anyhow::Result;
 use dxf::{tables::Layer, Color, Drawing};
-use std::error::Error;
 
-fn set_layer(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
+fn set_layer(drawing: &mut Drawing, input: &HJoint) -> Result<()> {
     let base_layer = Layer {
         name: input.layer_name.base.clone(),
         color: Color::from_index(4),
@@ -31,7 +31,7 @@ fn set_layer(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>
     Ok(())
 }
 
-fn write_base(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
+fn write_base(drawing: &mut Drawing, input: &HJoint) -> Result<()> {
     let sec = input.section;
     let gap = 10.0;
     let margin = 1000.0;
@@ -56,7 +56,7 @@ fn write_base(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error
     Ok(())
 }
 
-fn write_outer_plate(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
+fn write_outer_plate(drawing: &mut Drawing, input: &HJoint) -> Result<()> {
     let sec = input.section;
 
     let h = input.section.h;
@@ -77,7 +77,7 @@ fn write_outer_plate(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dy
     Ok(())
 }
 
-fn write_inner_plate(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
+fn write_inner_plate(drawing: &mut Drawing, input: &HJoint) -> Result<()> {
     let h = input.section.h;
     let tf = input.section.tf;
     let t = input.flange.inner_plate.t;
@@ -97,7 +97,7 @@ fn write_inner_plate(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dy
     Ok(())
 }
 
-fn write_flange_bolt(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
+fn write_flange_bolt(drawing: &mut Drawing, input: &HJoint) -> Result<()> {
     let is_staggered = input.flange.bolt.is_staggered;
     let pc = if is_staggered { 45.0 } else { 60.0 };
     let e = 40.0;
@@ -129,7 +129,7 @@ fn write_flange_bolt(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dy
     Ok(())
 }
 
-fn write_web_plate(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
+fn write_web_plate(drawing: &mut Drawing, input: &HJoint) -> Result<()> {
     let h = input.section.h;
     let l = input.web.plate.l;
     let b = input.web.plate.b;
@@ -171,7 +171,7 @@ fn write_web_plate(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn 
     Ok(())
 }
 
-fn write_web_bolt(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
+fn write_web_bolt(drawing: &mut Drawing, input: &HJoint) -> Result<()> {
     let gap = 10.0;
     let h = input.section.h;
     let mw = input.web.bolt.mw;
@@ -200,7 +200,7 @@ fn write_web_bolt(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn E
     Ok(())
 }
 
-pub fn write_x_view(drawing: &mut Drawing, input: &HJoint) -> Result<(), Box<dyn Error>> {
+pub fn write_x_view(drawing: &mut Drawing, input: &HJoint) -> Result<()> {
     set_layer(drawing, input)?;
 
     write_base(drawing, input)?;

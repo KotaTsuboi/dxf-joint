@@ -1,11 +1,11 @@
 use crate::input::HJoint;
+use anyhow::Result;
 use dxf::{
     entities::{Circle, DimensionBase, Entity, EntityType, Line, OrdinateDimension, Text},
     enums::{HorizontalTextJustification, VerticalTextJustification},
     tables::{DimStyle, Layer},
     Color, Drawing, Point,
 };
-use std::error::Error;
 
 pub fn write_line(
     drawing: &mut Drawing,
@@ -14,7 +14,7 @@ pub fn write_line(
     x2: f64,
     y2: f64,
     layer: &str,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<()> {
     let line = Line {
         p1: Point {
             x: x1,
@@ -34,25 +34,13 @@ pub fn write_line(
     Ok(())
 }
 
-pub fn write_cross(
-    drawing: &mut Drawing,
-    x: f64,
-    y: f64,
-    r: f64,
-    layer: &str,
-) -> Result<(), Box<dyn Error>> {
+pub fn write_cross(drawing: &mut Drawing, x: f64, y: f64, r: f64, layer: &str) -> Result<()> {
     write_line(drawing, x - r, y, x + r, y, layer)?;
     write_line(drawing, x, y - r, x, y + r, layer)?;
     Ok(())
 }
 
-pub fn write_circle(
-    drawing: &mut Drawing,
-    x: f64,
-    y: f64,
-    r: f64,
-    layer: &str,
-) -> Result<(), Box<dyn Error>> {
+pub fn write_circle(drawing: &mut Drawing, x: f64, y: f64, r: f64, layer: &str) -> Result<()> {
     let circle = Circle {
         center: Point { x, y, z: 0.0 },
         radius: r,
@@ -76,7 +64,7 @@ pub fn write_dimension(
     y2: f64,
     text_rotation_angle: f64,
     layer: String,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<()> {
     let dim_style = DimStyle {
         name: "mydim".to_string(),
         dimensioning_text_height: 1000.0,
